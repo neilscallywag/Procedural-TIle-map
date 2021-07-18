@@ -1,0 +1,205 @@
+<script src="http://code.jquery.com/jquery-1.11.1.min.js"></script>
+
+<table class="table">
+  <tr>
+    <td>
+      <div id="map">
+        <img
+          avatar="1"
+          src="images/sprites/1.png"
+          id="mySprite"
+          title=""
+          style="position: absolute; z-index: 1000"
+        />
+      </div>
+    </td>
+  </tr>
+</table>
+
+<script>
+  function random(min, max) {
+    return Math.floor(Math.random() * (max - min)) + min;
+  }
+
+  function step(x, y, direction) {
+    return [x + direction[0], y + direction[1]];
+  }
+
+  function validatePosition(map, x, y) {
+    return x >= 0 && x < map[0].length && y >= 0 && y < map.length;
+  }
+
+  function generateMap(configOverride) {
+    var configOverride = configOverride || {};
+    var config = {
+      numberOfPaths: configOverride.numberOfPaths || 30,
+      minPathLength: configOverride.minPathLength || 5,
+      maxPathLength: configOverride.maxPathLength || 12,
+      maxWidth: configOverride.maxWidth || 30,
+      maxHeight: configOverride.maxHeight || 30,
+      startPosition: configOverride.startPosition || {
+        x: -1,
+        y: -1,
+      },
+    };
+    if (
+      config.startPosition.x < 0 ||
+      config.startPosition.x >= config.maxWidth
+    ) {
+      config.startPosition.x = random(0, config.maxWidth);
+    }
+    if (
+      config.startPosition.y < 0 ||
+      config.startPosition.y >= config.maxHeight
+    ) {
+      config.startPosition.y = random(0, config.maxHeight);
+    }
+    var map = [];
+    for (var y = 0; y < config.maxHeight; y++) {
+      map.push([]);
+      for (var x = 0; x < config.maxWidth; x++) {
+        map[y].push(0);
+      }
+    }
+    var directions = [
+      [-1, 0],
+      [1, 0],
+      [0, -1],
+      [0, 1],
+    ];
+    var x = config.startPosition.x;
+    var y = config.startPosition.y;
+    map[y][x] = 1;
+    var direction;
+    var lastDirection;
+    var pathLength;
+    for (var i = 0; i < config.numberOfPaths; i++) {
+      pathLength = random(config.minPathLength, config.maxPathLength + 1);
+      do {
+        direction = directions[random(0, directions.length)];
+      } while (
+        !validatePosition(map, ...step(x, y, direction)) ||
+        (lastDirection && direction == lastDirection)
+      );
+      for (var j = 0; j < pathLength; j++) {
+        if (!validatePosition(map, ...step(x, y, direction))) {
+          break;
+        }
+        [x, y] = step(x, y, direction);
+        map[y][x] = 1;
+      }
+      lastDirection = direction;
+    }
+    return map;
+  }
+  let map = generateMap({
+    numberOfPaths: 50, //Number of paths to draw
+    minPathLength: 20, //Minimal length of a path
+    maxPathLength: 40, //Maximal length of a path
+    maxWidth: 100, //Maximum width of the map
+    maxHeight: 100, //Maximum height of the map
+    startPosition: {
+      x: 0,
+      y: 0,
+    }, //Position at which random walk is started
+  }); //
+  console.log(map);
+  var movements = {
+    upleft: {
+      up: -1,
+      left: -1,
+    },
+    up: {
+      up: -1,
+      left: 0,
+    },
+    upright: {
+      up: -1,
+      left: 1,
+    },
+    left: {
+      up: 0,
+      left: -1,
+    },
+    right: {
+      up: 0,
+      left: 1,
+    },
+    downleft: {
+      up: 1,
+      left: -1,
+    },
+    down: {
+      up: 1,
+      left: 0,
+    },
+    downright: {
+      up: 1,
+      left: 1,
+    },
+  };
+  var x = 0,
+    y = 0;
+  console.log(x, y);
+
+  function checkKeysUp(evt) {
+    if (evt.keyCode == 38) {
+      moveSprite("up", "Up");
+    } else if (evt.keyCode == 37) {
+      moveSprite("left", "Left");
+    } else if (evt.keyCode == 39) {
+      moveSprite("right", "Right");
+    } else if (evt.keyCode == 40) {
+      moveSprite("down", "Down");
+    }
+    //alert(evt.keyCode);
+  }
+
+  function checkKeysDown(evt) {
+    if (evt.keyCode >= 37 || evt.keyCode <= 40) {
+      if (evt.preventDefault) {
+        evt.preventDefault();
+      }
+      if (evt.stopPropagation) {
+        evt.stopPropagation();
+      }
+    }
+  }
+
+  function moveSprite(key, Direction) {
+    var sprite = document.getElementById("mySprite");
+    var avatar = $("#mySprite").attr("avatar");
+    sprite.src = "images/sprites/" + avatar + Direction + ".png";
+    var newX = x + movements[key]["left"];
+    var newY = y + movements[key]["up"];
+    if (
+      typeof map[newY] !== "undefined" &&
+      typeof map[newY][newX] !== "undefined" &&
+      (map[newY][newX] == 1 || map[newY][newX] > 10000)
+    ) {
+      x = newX;
+      y = newY;
+      sprite.style.left = x * 40 + "px";
+      sprite.style.top = y * 40 + "px";
+    }
+  }
+  window.addEventListener("keyup", checkKeysUp, false);
+  window.addEventListener("keydown", checkKeysDown, false);
+
+  for (var i = 0; i < map.length; i++) {
+    document.write("<div >" + map[i] + "</div><br>");
+  }
+</script>
+
+<style>
+  br {
+    line-height: 20px;
+  }
+  div {
+    font-size: 20px;
+    letter-spacing: 20px;
+  }
+  body {
+    margin: 0px;
+  }
+</style>
